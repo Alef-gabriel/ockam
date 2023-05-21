@@ -1,7 +1,7 @@
 use crate::{fmt_ok, CommandGlobalOpts};
-use anyhow::anyhow;
 use clap::Args;
 use colorful::Colorful;
+use miette::miette;
 use ockam_api::cli_state::traits::StateDirTrait;
 use ockam_api::cli_state::CliStateError;
 
@@ -28,7 +28,7 @@ fn run_impl(opts: CommandGlobalOpts, cmd: DefaultCommand) -> crate::Result<()> {
         Ok(v) => {
             // If it exists, warn the user and exit
             if state.is_default(v.name())? {
-                Err(anyhow!("Vault '{name}' is already the default").into())
+                Err(miette!("Vault '{}' is already the default", name).into())
             }
             // Otherwise, set it as default
             else {
@@ -43,7 +43,7 @@ fn run_impl(opts: CommandGlobalOpts, cmd: DefaultCommand) -> crate::Result<()> {
             }
         }
         Err(err) => match err {
-            CliStateError::NotFound => Err(anyhow!("Vault '{name}' not found").into()),
+            CliStateError::NotFound => Err(miette!("Vault '{}' not found", name).into()),
             _ => Err(err.into()),
         },
     }

@@ -60,7 +60,7 @@ use console::Term;
 use credential::CredentialCommand;
 use enroll::EnrollCommand;
 use environment::EnvironmentCommand;
-use error::{Error, Result};
+use error::{Error, ErrorReportHandler, Result};
 use identity::IdentityCommand;
 use kafka::consumer::KafkaConsumerCommand;
 use kafka::producer::KafkaProducerCommand;
@@ -310,6 +310,8 @@ pub fn run() {
 
 impl OckamCommand {
     pub fn run(self) {
+        let _hook_result = miette::set_hook(Box::new(|_| Box::new(ErrorReportHandler::new())));
+
         let config = OckamConfig::load().expect("Failed to load config");
         let options = CommandGlobalOpts::new(self.global_args.clone(), config);
 

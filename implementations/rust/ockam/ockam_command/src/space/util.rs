@@ -51,7 +51,7 @@ pub mod config {
         let inner = config.write();
         match inner.lookup.get_space(name) {
             Some(s) => Ok(s.id.clone()),
-            None => Err(anyhow::anyhow!("Space '{name}' does not exist").into()),
+            None => Err(miette::miette!("Space '{}' does not exist", name).into()),
         }
     }
 

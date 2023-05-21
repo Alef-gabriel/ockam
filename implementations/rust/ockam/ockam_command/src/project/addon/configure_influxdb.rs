@@ -1,8 +1,9 @@
 use std::path::PathBuf;
 
-use anyhow::{anyhow, Context as _};
+use anyhow::Context as _;
 use clap::builder::NonEmptyStringValueParser;
 use clap::Args;
+use miette::miette;
 
 use ockam::Context;
 
@@ -152,7 +153,7 @@ async fn run_impl(
         _ => {
             return Err(crate::error::Error::new(
                 exitcode::IOERR,
-                anyhow!(
+                miette!(
                     "Permissions JSON is required, supply --permissions or --permissions-path."
                 ),
             ));
