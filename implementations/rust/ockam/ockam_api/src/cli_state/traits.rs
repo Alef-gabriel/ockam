@@ -82,13 +82,16 @@ pub trait StateDirTrait: Sized + Send + Sync {
         name: impl AsRef<str>,
         config: <<Self as StateDirTrait>::Item as StateItemTrait>::Config,
     ) -> Result<Self::Item> {
+        debug!(name = %name.as_ref(), "Creating new item");
         if self.exists(&name) {
             return Err(CliStateError::AlreadyExists);
         }
+        trace!(name = %name.as_ref(), "Creating item instance");
         let state = Self::Item::new(self.path(&name), config)?;
         if !self.default_path()?.exists() {
             self.set_default(&name)?;
         }
+        info!(name = %name.as_ref(), "Created new item");
         Ok(state)
     }
 
@@ -165,6 +168,7 @@ pub trait StateDirTrait: Sized + Send + Sync {
     }
 
     fn set_default(&self, name: impl AsRef<str>) -> Result<()> {
+        debug!(name = %name.as_ref(), "Setting default item");
         if !self.exists(&name) {
             return Err(CliStateError::NotFound);
         }
@@ -174,6 +178,7 @@ pub trait StateDirTrait: Sized + Send + Sync {
         let _ = std::fs::remove_file(&link);
         // Create link to the identity
         std::os::unix::fs::symlink(original, link)?;
+        info!(name = %name.as_ref(), "Set default item");
         Ok(())
     }
 
