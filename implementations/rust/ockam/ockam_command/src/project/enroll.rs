@@ -20,11 +20,11 @@ use crate::{docs, CommandGlobalOpts, Result};
 use crate::identity::{get_identity_name, initialize_identity_if_default};
 use crate::project::util::create_secure_channel_to_authority;
 use ockam_api::authenticator::direct::TokenAcceptorClient;
-use ockam_api::cli_state::{StateDirTrait, StateItemTrait};
+use ockam_api::cli_state::{CredentialConfig, StateDirTrait, StateItemTrait};
 use ockam_api::config::lookup::ProjectAuthority;
 use ockam_api::DefaultAddress;
 use ockam_core::route;
-use ockam_identity::CredentialsIssuerClient;
+use ockam_identity::{identities, CredentialsIssuerClient};
 use ockam_multiaddr::proto::Service;
 use ockam_node::RpcClient;
 
@@ -108,12 +108,12 @@ async fn run_impl(
 
     // Create secure channel to the project's authority node
     // RPC is in embedded mode
-    let (secure_channel_addr, _secure_channel_flow_control_id) = {
-        let authority =
-            ProjectAuthority::from_raw(&proj.authority_access_route, &proj.authority_identity)
-                .await?
-                .ok_or_else(|| anyhow!("Authority details not configured"))?;
-        let identity = get_identity_name(&opts.state, &cmd.cloud_opts.identity);
+    let authority =
+        ProjectAuthority::from_raw(&proj.authority_access_route, &proj.authority_identity)
+            .await?
+            .ok_or_else(|| anyhow!("Authority details not configured"))?;
+    let identity = get_identity_name(&opts.state, &cmd.cloud_opts.identity);
+    let (secure_channel_addr, _secure_channel_flow_control_id) =
         create_secure_channel_to_authority(
             &ctx,
             &opts,
@@ -122,8 +122,7 @@ async fn run_impl(
             authority.address(),
             Some(identity),
         )
-        .await?
-    };
+        .await?;
 
     if let Some(tkn) = cmd.enroll_ticket.as_ref() {
         // Return address to the authenticator in the authority node
@@ -177,6 +176,14 @@ async fn run_impl(
         .overwrite(&project.name, project.clone().try_into()?)?;
 
     let credential = client2.credential().await?;
+    let identity = identities()
+        .identities_creation()
+        .decode_identity(authority.identity())
+        .await?;
+    opts.state.credentials.overwrite(
+        &project.name,
+        CredentialConfig::new(identity, credential.to_string()),
+    )?;
     println!("---");
     println!("{credential}");
     println!("---");
